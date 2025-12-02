@@ -5,7 +5,7 @@ import Auth
 // MARK: - Auth View (Login / Sign Up)
 
 struct AuthView: View {
-    let onAuthenticated: () -> Void      // 👈 call this when login succeeds
+    let onAuthenticated: () -> Void      // call this when user decides to continue
 
     @State private var isLoginMode: Bool
     @State private var email: String = ""
@@ -17,7 +17,8 @@ struct AuthView: View {
     @State private var successMessage: String?
     
     // Custom initializer so we can have startInLoginMode
-    init(startInLoginMode: Bool = false, onAuthenticated: @escaping () -> Void) {
+    init(startInLoginMode: Bool = false,
+         onAuthenticated: @escaping () -> Void) {
         self.onAuthenticated = onAuthenticated
         _isLoginMode = State(initialValue: startInLoginMode)
     }
@@ -130,6 +131,7 @@ struct AuthView: View {
                     .multilineTextAlignment(.center)
             }
             
+            
             // Secondary links
             if isLoginMode {
                 Button {
@@ -196,3 +198,59 @@ struct AuthView: View {
         }
         
         isLoading = true
+        defer { isLoading = false }
+        
+        let client = SupabaseManager.shared.client
+        
+        do {
+            if isLoginMode {
+                print("➡️ Attempting Supabase signIn")
+                _ = try await client.auth.signIn(
+                    email: email,
+                    password: password
+                )
+                print("✅ Login succeeded")
+
+                // Immediately tell RootView that we’re authenticated
+                successMessage = nil
+                authError = nil
+                onAuthenticated()
+            } else {
+                print("➡️ Attempting Supabase signUp")
+                _ = try await client.auth.signUp(
+                    email: email,
+                    password: password
+                )
+                successMessage = "Account created! Please check your email."
+            }
+        } catch {
+            print("❌ Auth error:", error.localizedDescription)
+            authError = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Preview
+
+struct AuthView_Previews: PreviewProvider {
+    struct PreviewWrapper: View {
+        @State private var isAuthenticated = false
+
+        var body: some View {
+            NavigationStack {
+                if isAuthenticated {
+                    HomeView()
+                } else {
+                    AuthView {
+                        print("✅ onAuthenticated called in preview")
+                        isAuthenticated = true
+                    }
+                }
+            }
+        }
+    }
+
+    static var previews: some View {
+        PreviewWrapper()
+    }
+}

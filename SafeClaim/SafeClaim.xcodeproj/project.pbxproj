@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2532650C2EDA3F3B00B389AB /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2532650B2EDA3F3B00B389AB /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		25B3CFAB2ED129B400F1E88D /* SafeClaim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafeClaim.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		2532650E2EDA453B00B389AB /* Exceptions for "SafeClaim" folder in "SafeClaim" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 25B3CFAA2ED129B400F1E88D /* SafeClaim */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		25B3CFAD2ED129B400F1E88D /* SafeClaim */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2532650E2EDA453B00B389AB /* Exceptions for "SafeClaim" folder in "SafeClaim" target */,
+			);
 			path = SafeClaim;
 			sourceTree = "<group>";
 		};
@@ -23,16 +40,25 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2532650C2EDA3F3B00B389AB /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2532650A2EDA3F3B00B389AB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		25B3CFA22ED129B400F1E88D = {
 			isa = PBXGroup;
 			children = (
 				25B3CFAD2ED129B400F1E88D /* SafeClaim */,
+				2532650A2EDA3F3B00B389AB /* Frameworks */,
 				25B3CFAC2ED129B400F1E88D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -65,6 +91,7 @@
 			);
 			name = SafeClaim;
 			packageProductDependencies = (
+				2532650B2EDA3F3B00B389AB /* Supabase */,
 			);
 			productName = SafeClaim;
 			productReference = 25B3CFAB2ED129B400F1E88D /* SafeClaim.app */;
@@ -94,6 +121,9 @@
 			);
 			mainGroup = 25B3CFA22ED129B400F1E88D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				253265092EDA3A5500B389AB /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 25B3CFAC2ED129B400F1E88D /* Products */;
 			projectDirPath = "";
@@ -256,6 +286,7 @@
 				DEVELOPMENT_TEAM = L25G4D8N2N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SafeClaim/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +319,7 @@
 				DEVELOPMENT_TEAM = L25G4D8N2N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SafeClaim/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -332,6 +364,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		253265092EDA3A5500B389AB /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2532650B2EDA3F3B00B389AB /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 253265092EDA3A5500B389AB /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 25B3CFA32ED129B400F1E88D /* Project object */;
 }

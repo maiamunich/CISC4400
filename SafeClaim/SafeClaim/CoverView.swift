@@ -81,6 +81,7 @@ struct CoverView: View {
     }
 }
 
+// Previews
 struct CoverView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationStack {

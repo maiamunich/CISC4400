@@ -1,17 +1,16 @@
-//
-//  SafeClaimApp.swift
-//  SafeClaim
-//
-//  Created by Maia Munich on 11/21/25.
-//
-
 import SwiftUI
+import Supabase
+import Auth
 
 @main
 struct SafeClaimApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .onOpenURL { url in
+                    SupabaseManager.shared.client.auth.handle(url)
+                    print("Received deep link:", url.absoluteString)
+                }
         }
     }
 }
