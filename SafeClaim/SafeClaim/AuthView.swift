@@ -1,35 +1,33 @@
 import SwiftUI
 import Supabase
-import Auth
-
-// MARK: - Auth View (Login / Sign Up)
 
 struct AuthView: View {
-    let onAuthenticated: () -> Void      // call this when user decides to continue
+    let onAuthenticated: () -> Void
 
+    @Environment(\.dismiss) private var dismiss
+    
     @State private var isLoginMode: Bool
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
-    
+
     @State private var isLoading: Bool = false
     @State private var authError: String?
     @State private var successMessage: String?
-    
-    // Custom initializer so we can have startInLoginMode
+
     init(startInLoginMode: Bool = false,
          onAuthenticated: @escaping () -> Void) {
         self.onAuthenticated = onAuthenticated
         _isLoginMode = State(initialValue: startInLoginMode)
     }
-    
+
     var body: some View {
         VStack(spacing: 24) {
             // Title
             VStack(spacing: 4) {
                 Text(isLoginMode ? "Welcome back" : "Create an account")
                     .font(.system(size: 28, weight: .bold))
-                
+
                 Text(
                     isLoginMode
                     ? "Log in to manage your SafeClaim account."
@@ -39,18 +37,17 @@ struct AuthView: View {
                 .foregroundColor(.secondary)
             }
             .padding(.top, 32)
-            
-            // Segmented control for Login / Sign Up
+
+            // Segmented control
             Picker("", selection: $isLoginMode) {
                 Text("Log In").tag(true)
                 Text("Sign Up").tag(false)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            
+
             // Form
             VStack(spacing: 16) {
-                // Email
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Email")
                         .font(.footnote)
@@ -64,8 +61,7 @@ struct AuthView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
                 }
-                
-                // Password
+
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Password")
                         .font(.footnote)
@@ -75,8 +71,7 @@ struct AuthView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
                 }
-                
-                // Confirm password (only for sign up)
+
                 if !isLoginMode {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Confirm Password")
@@ -90,7 +85,7 @@ struct AuthView: View {
                 }
             }
             .padding(.horizontal)
-            
+
             // Primary button
             Button {
                 Task {
@@ -109,13 +104,12 @@ struct AuthView: View {
                         .background(Color.orange)
                         .foregroundColor(.white)
                         .cornerRadius(14)
-                        .shadow(radius: 3, y: 2)
                 }
             }
             .padding(.horizontal)
             .padding(.top, 8)
             .disabled(isLoading)
-            
+
             // Error / success messages
             if let authError {
                 Text(authError)
@@ -130,9 +124,7 @@ struct AuthView: View {
                     .padding(.horizontal)
                     .multilineTextAlignment(.center)
             }
-            
-            
-            // Secondary links
+
             if isLoginMode {
                 Button {
                     print("Forgot password tapped")
@@ -143,7 +135,7 @@ struct AuthView: View {
                 }
                 .padding(.top, 4)
             }
-            
+
             Spacer()
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -154,9 +146,9 @@ struct AuthView: View {
             }
         }
     }
-    
-    // MARK: - Password Validation
-    
+
+    // MARK: - Password validation (sign up only)
+
     func isPasswordValid(_ password: String) -> Bool {
         guard password.count >= 10 else { return false }
         let uppercase = NSPredicate(format: "SELF MATCHES %@", ".*[A-Z]+.*")
@@ -164,23 +156,23 @@ struct AuthView: View {
         let digit = NSPredicate(format: "SELF MATCHES %@", ".*[0-9]+.*")
         let special = NSPredicate(format: "SELF MATCHES %@", ".*[^A-Za-z0-9].*")
         return uppercase.evaluate(with: password)
-        && lowercase.evaluate(with: password)
-        && digit.evaluate(with: password)
-        && special.evaluate(with: password)
+            && lowercase.evaluate(with: password)
+            && digit.evaluate(with: password)
+            && special.evaluate(with: password)
     }
-    
-    // MARK: - Auth Logic
-    
+
+    // MARK: - Auth logic
+
     @MainActor
     func handleAuth() async {
         authError = nil
         successMessage = nil
-        
+
         guard !email.isEmpty, !password.isEmpty else {
             authError = "Please fill in all fields."
             return
         }
-        
+
         if !isLoginMode {
             if !isPasswordValid(password) {
                 authError = """
@@ -190,18 +182,18 @@ struct AuthView: View {
                 """
                 return
             }
-            
+
             if password != confirmPassword {
                 authError = "Passwords do not match."
                 return
             }
         }
-        
+
         isLoading = true
         defer { isLoading = false }
-        
+
         let client = SupabaseManager.shared.client
-        
+
         do {
             if isLoginMode {
                 print("➡️ Attempting Supabase signIn")
@@ -211,10 +203,11 @@ struct AuthView: View {
                 )
                 print("✅ Login succeeded")
 
-                // Immediately tell RootView that we’re authenticated
-                successMessage = nil
-                authError = nil
+                // 1) Tell RootView "user is authenticated"
                 onAuthenticated()
+
+                // 2) Pop AuthView off the NavigationStack (like tapping the back arrow)
+                dismiss()
             } else {
                 print("➡️ Attempting Supabase signUp")
                 _ = try await client.auth.signUp(
@@ -223,34 +216,10 @@ struct AuthView: View {
                 )
                 successMessage = "Account created! Please check your email."
             }
+
         } catch {
             print("❌ Auth error:", error.localizedDescription)
             authError = error.localizedDescription
         }
-    }
-}
-
-// MARK: - Preview
-
-struct AuthView_Previews: PreviewProvider {
-    struct PreviewWrapper: View {
-        @State private var isAuthenticated = false
-
-        var body: some View {
-            NavigationStack {
-                if isAuthenticated {
-                    HomeView()
-                } else {
-                    AuthView {
-                        print("✅ onAuthenticated called in preview")
-                        isAuthenticated = true
-                    }
-                }
-            }
-        }
-    }
-
-    static var previews: some View {
-        PreviewWrapper()
     }
 }

@@ -15,23 +15,36 @@ struct ClaimView: View {
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var selectedImages: [Image] = []
 
-    // Insurance info
-    @State private var insuranceProfile: InsuranceProfile?
+    // Insurance policies (multi-policy support)
+    @State private var policies: [InsuranceProfile] = []
+    @State private var selectedPolicyId: UUID? = nil
 
     // UI state
     @State private var isLoading: Bool = false
     @State private var statusMessage: String?
     @State private var statusColor: Color = .clear
 
+    // Expanded list of claim types
     private let claimTypes = [
         "Property Damage (Fire/Flood)",
+        "Property Damage (Water / Burst Pipe)",
+        "Property Damage (Wind / Storm)",
+        "Theft / Burglary",
         "Auto Accident",
-        "Theft",
+        "Glass / Windshield Damage",
+        "Liability (Injury on Property)",
         "Medical / Injury",
+        "Travel / Trip Cancellation",
         "Other"
     ]
 
     @Environment(\.openURL) private var openURL
+
+    // Convenience: currently selected policy
+    private var selectedPolicy: InsuranceProfile? {
+        guard let id = selectedPolicyId else { return nil }
+        return policies.first(where: { $0.id == id })
+    }
 
     var body: some View {
         ScrollView {
@@ -44,7 +57,7 @@ struct ClaimView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                // Claim type
+                // MARK: - Claim type
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Type of Claim")
                         .font(.footnote)
@@ -139,6 +152,37 @@ struct ClaimView: View {
                     }
                 }
 
+                // MARK: - Which insurance is this for?
+                if !policies.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Which insurance is this claim for?")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+
+                        Picker("Insurance Policy", selection: $selectedPolicyId) {
+                            ForEach(policies) { policy in
+                                // Tag must match Picker selection type (UUID?)
+                                Text("\(policy.insuranceType) – \(policy.insuranceName)")
+                                    .tag(policy.id as UUID?)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+
+                        if let selectedPolicy {
+                            Text("Member ID: \(selectedPolicy.memberId)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                } else {
+                    Text("Add an insurance policy in the Insurance tab so you can link claims to specific coverage.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
                 // Save claim button
                 Button {
                     Task {
@@ -173,20 +217,22 @@ struct ClaimView: View {
 
                 Divider().padding(.vertical, 8)
 
-                // Link to insurer claim portal
-                if let profile = insuranceProfile,
-                   let urlString = profile.claimsUrl,
+                // MARK: - Link to insurer claim portal
+                if let policy = selectedPolicy,
+                   let urlString = policy.claimsUrl,
                    let url = URL(string: urlString) {
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Submit on your insurer’s website")
                             .font(.headline)
-                        Text("When you’re ready, tap below to go to \(profile.insuranceName)’s claim page.")
+                        Text("When you’re ready, tap below to go to \(policy.insuranceName)’s claim page.")
                             .font(.footnote)
                             .foregroundColor(.secondary)
+
                         Button {
                             openURL(url)
                         } label: {
-                            Text("Open \(profile.insuranceName) claim portal")
+                            Text("Open \(policy.insuranceName) claim portal")
                                 .font(.system(size: 16, weight: .semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding()
@@ -195,7 +241,7 @@ struct ClaimView: View {
                         }
                     }
                 } else {
-                    Text("Add a claims website URL in your Insurance settings to enable quick access to your insurer’s portal.")
+                    Text("Add a claims website URL for each policy in the Insurance tab to enable quick access to your insurer’s portal.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -207,7 +253,7 @@ struct ClaimView: View {
         .navigationTitle("Make a Claim")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await loadInsuranceProfile()
+            await loadInsurancePolicies()
         }
     }
 
@@ -217,34 +263,52 @@ struct ClaimView: View {
         switch claimType {
         case "Property Damage (Fire/Flood)":
             return "Photos of damage, incident date and location, any emergency service reports, repair estimates, and receipts for damaged items if available."
+        case "Property Damage (Water / Burst Pipe)":
+            return "Photos of water damage, plumber or contractor reports, incident date, and receipts or invoices for emergency repairs or mitigation."
+        case "Property Damage (Wind / Storm)":
+            return "Photos of roof or structural damage, weather event date, repair estimates, and any temporary repair receipts (tarps, boarding, etc.)."
+        case "Theft / Burglary":
+            return "Police report number, list of stolen items with approximate value, purchase receipts if available, and any photos or serial numbers."
         case "Auto Accident":
             return "Photos of all vehicles, police report number, driver and insurance details for everyone involved, repair estimates, and medical records if there were injuries."
-        case "Theft":
-            return "Police report number, list of stolen items with approximate value, purchase receipts if available, and any photos or serial numbers."
+        case "Glass / Windshield Damage":
+            return "Close-up photos of the damage, full-car photos, date/location of incident, and any repair or replacement quotes."
+        case "Liability (Injury on Property)":
+            return "Date and location of incident, description of what happened, contact details for the injured person, any witness information, and medical or incident reports."
         case "Medical / Injury":
             return "Date of incident, provider or hospital name, diagnosis information, medical bills, receipts, and proof of any out-of-pocket costs."
+        case "Travel / Trip Cancellation":
+            return "Itinerary, proof of payment, airline or hotel communications, reason for cancellation, and any relevant receipts (taxis, hotels, etc.)."
         default:
-            return "Describe what happened and attach any photos, receipts, or documents that help show what was lost or damaged."
+            return "Describe what happened and attach any photos, receipts, or documents that help show what was lost, damaged, or interrupted."
         }
     }
 
     // MARK: - Supabase helpers
 
-    private func loadInsuranceProfile() async {
+    /// Load all insurance policies for the current user
+    private func loadInsurancePolicies() async {
         let client = SupabaseManager.shared.client
+
         do {
             guard let user = client.auth.currentUser else { return }
-            let profiles: [InsuranceProfile] = try await client
+
+            let result: [InsuranceProfile] = try await client
                 .from("insurance_profiles")
                 .select()
                 .eq("user_id", value: user.id)
-                .limit(1)
                 .execute()
                 .value
 
-            insuranceProfile = profiles.first
+            await MainActor.run {
+                self.policies = result
+                // Auto-select the first policy if none selected yet
+                if self.selectedPolicyId == nil {
+                    self.selectedPolicyId = result.first?.id
+                }
+            }
         } catch {
-            print("Failed to load insurance profile:", error)
+            print("Failed to load insurance policies:", error)
         }
     }
 
@@ -259,6 +323,13 @@ struct ClaimView: View {
         do {
             guard let user = client.auth.currentUser else {
                 statusMessage = "You must be logged in to file a claim."
+                statusColor = .red
+                return
+            }
+
+            // If the user has policies, make sure one is selected
+            if !policies.isEmpty && selectedPolicyId == nil {
+                statusMessage = "Please select which insurance policy this claim is for."
                 statusColor = .red
                 return
             }
@@ -282,7 +353,7 @@ struct ClaimView: View {
             let claim = Claim(
                 id: nil,
                 userId: user.id,
-                insuranceProfileId: insuranceProfile?.id,
+                insuranceProfileId: selectedPolicy?.id,  // 👈 link to whichever policy is chosen
                 claimType: claimType,
                 description: descriptionText,
                 estimatedCost: costValue,
@@ -318,7 +389,6 @@ struct ClaimView: View {
                 let fileName = "\(UUID().uuidString).jpg"
                 let path = "claims/\(fileName)"
 
-                // Upload image data to Storage
                 try await client.storage
                     .from("claim-photos")
                     .upload(
@@ -327,7 +397,6 @@ struct ClaimView: View {
                         options: FileOptions(contentType: "image/jpeg")
                     )
 
-                // Get public URL (note the `try`)
                 let publicURL = try client.storage
                     .from("claim-photos")
                     .getPublicURL(path: path)
@@ -354,6 +423,7 @@ struct ClaimView: View {
     }
 }
 
+// ClaimView preview
 struct ClaimView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationStack {

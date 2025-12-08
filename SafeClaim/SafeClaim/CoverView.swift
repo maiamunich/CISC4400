@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct CoverView: View {
-    /// Called when the user successfully authenticates
     let onAuthenticated: () -> Void
 
     var body: some View {
@@ -42,9 +41,9 @@ struct CoverView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
-                
+            
                 Spacer()
-                
+
                 VStack(spacing: 16) {
                     NavigationLink {
                         AuthView(
@@ -59,9 +58,8 @@ struct CoverView: View {
                             .background(Color.white)
                             .foregroundColor(Color.orange)
                             .cornerRadius(14)
-                            .shadow(radius: 4, y: 2)
                     }
-                    
+
                     NavigationLink {
                         AuthView(
                             startInLoginMode: true,
@@ -81,12 +79,11 @@ struct CoverView: View {
     }
 }
 
-// Previews
 struct CoverView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationStack {
             CoverView {
-                // preview
+                // preview closure
             }
         }
     }

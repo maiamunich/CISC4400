@@ -27,7 +27,9 @@ struct HomeView: View {
             }
 
             NavigationLink {
-                SettingsView()
+                SettingsView(onLogout: {
+                    print("Logged out from HomeView")   // or hook into RootView later
+                })
             } label: {
                 Label("Settings", systemImage: "gearshape.fill")
                     .frame(maxWidth: .infinity)
@@ -35,6 +37,7 @@ struct HomeView: View {
                     .background(Color.orange.opacity(0.1))
                     .cornerRadius(12)
             }
+
 
             Spacer()
         }

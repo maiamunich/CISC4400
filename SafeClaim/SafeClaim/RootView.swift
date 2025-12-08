@@ -1,19 +1,21 @@
 import SwiftUI
 import Supabase
-import Auth
 
 struct RootView: View {
-    @State private var isAuthenticated: Bool = false
+    @State private var isAuthenticated = false
 
     var body: some View {
         NavigationStack {
             if isAuthenticated {
-                HomeView()
+                MainAppView(onLogout: {
+                    print("🔴 RootView: user logged out")
+                    isAuthenticated = false
+                })
             } else {
-                CoverView {
-                    // Called when AuthView says “user is logged in”
+                CoverView(onAuthenticated: {
+                    print("✅ RootView: onAuthenticated called")
                     isAuthenticated = true
-                }
+                })
             }
         }
     }
